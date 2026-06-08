@@ -1,0 +1,16 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+*.swp
+*.swo
+
+# Node (por si se instala algún paquete en el futuro)
+node_modules/
+npm-debug.log*
+
+# Variables de entorno sensibles (nunca subir)
+.env
+.env.local

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#0a1a0a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="description" content="Plataforma ciudadana de incidencias — Provincia de Huelva"/>
+  <title>DenuciaTuCalle · Huelva</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect width='48' height='48' rx='10' fill='%2322c55e'/><path d='M24 8C18.48 8 14 12.48 14 18c0 8.5 10 22 10 22s10-13.5 10-22c0-5.52-4.48-10-10-10z' fill='%230a1a0a'/><circle cx='24' cy='18' r='4' fill='%2322c55e'/></svg>"/>
+  <link rel="stylesheet" href="css/app.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="manifest" href="manifest.json"/>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="s-login" class="screen active" role="main">
+  <div class="login-grid" aria-hidden="true"></div>
+  <div class="login-glow"  aria-hidden="true"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    </div>
+    <div class="login-brand">Denuncia<span>TuCalle</span></div>
+    <div class="login-tag">REPORTA · MEJORA · VIVE HUELVA</div>
+    <div class="login-label">Elige tu perfil</div>
+    <div class="profiles">
+      <div class="profile-card" onclick="App.login('antonio')" role="button" tabindex="0" aria-label="Entrar como Antonio">
+        <div class="p-av" style="background:#1d3a6e;color:#93c5fd">AN</div>
+        <div class="p-name">Antonio</div>
+        <div class="p-role">Ciudadano</div>
+      </div>
+      <div class="profile-card" onclick="App.login('imanol')" role="button" tabindex="0" aria-label="Entrar como Imanol">
+        <div class="p-av" style="background:#14532d;color:#86efac">IM</div>
+        <div class="p-name">Imanol</div>
+        <div class="p-role">Ciudadano</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="s-app" class="screen">
+
+  <!-- Header -->
+  <header class="app-hdr">
+    <div class="hdr-logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    </div>
+    <div class="hdr-brand">Denuncia<span>TuCalle</span></div>
+    <div class="hdr-right">
+      <div class="hdr-user" onclick="App.showView('perfil')" role="button" tabindex="0" aria-label="Mi perfil">
+        <div class="hdr-av" id="hdr-av"></div>
+        <span class="hdr-uname" id="hdr-uname"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Views -->
+  <div class="app-content">
+
+    <!-- MAPA -->
+    <div class="view active" id="v-mapa" role="main" aria-label="Mapa de incidencias de Huelva">
+      <div class="mapa-container">
+        <div id="map-leaflet" style="width: 100%; height: 100%; z-index: 1; background: #c0dce8;"></div>
+        <div class="mapa-topbar">
+          <div class="mapa-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+            Huelva — 80 municipios
+          </div>
+          <div class="mapa-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Buscar municipio…" id="mapa-q" oninput="App.mapaSearch(this.value)" aria-label="Buscar municipio en el mapa"/>
+          </div>
+        </div>
+        <!-- dark-bg legend for legibility -->
+        <div class="mapa-legend" aria-label="Leyenda del mapa">
+          <div class="leg-row"><div class="leg-dot" style="background:#fca5a5"></div>Con pendientes</div>
+          <div class="leg-row"><div class="leg-dot" style="background:#93c5fd"></div>En proceso</div>
+          <div class="leg-row"><div class="leg-dot" style="background:#86efac"></div>Resueltas</div>
+          <div class="leg-row"><div class="leg-dot" style="background:#fbbf24"></div>Urgentes</div>
+          <div class="leg-row"><div class="leg-dot" style="background:#b2d4a0"></div>Sin incidencias</div>
+        </div>
+        <div class="pin-tooltip" id="pin-tooltip" role="tooltip" aria-live="polite"></div>
+      </div>
+      <!-- Pull panel sits BETWEEN map and nav wrapper — never overlaps FAB -->
+      <div class="pull-panel" id="pull-panel">
+        <div class="pull-header" onclick="App.togglePull()" role="button" tabindex="0"
+             onkeydown="if(event.key==='Enter')App.togglePull()" aria-expanded="false">
+          <div class="pull-title">Incidencias recientes</div>
+          <div class="pull-count" id="pull-count"></div>
+          <svg class="pull-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+        </div>
+        <div class="pull-body" id="pull-body"></div>
+      </div>
+    </div>
+
+    <!-- LISTA -->
+    <div class="view" id="v-lista">
+      <div class="list-hdr">
+        <h1>Incidencias</h1>
+        <div class="filtros" role="group" aria-label="Filtrar por estado">
+          <button class="fil on" onclick="App.filtrar(this,'todas')">Todas</button>
+          <button class="fil" onclick="App.filtrar(this,'nueva')">Nuevas</button>
+          <button class="fil" onclick="App.filtrar(this,'pendiente')">Pendientes</button>
+          <button class="fil" onclick="App.filtrar(this,'proceso')">En proceso</button>
+          <button class="fil" onclick="App.filtrar(this,'resuelto')">Resueltas</button>
+        </div>
+      </div>
+      <div class="scroll-area"><div class="cards-pad" id="lista-cards"></div></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="view" id="v-stats">
+      <div class="scroll-area"><div class="stats-scroll" id="stats-content"></div></div>
+    </div>
+
+    <!-- PERFIL -->
+    <div class="view" id="v-perfil">
+      <div class="scroll-area">
+        <div class="perf-hero">
+          <div class="perf-av" id="perf-av"></div>
+          <div>
+            <div class="perf-name" id="perf-name"></div>
+            <div class="perf-sub">Ciudadano activo · Huelva</div>
+          </div>
+        </div>
+        <div class="perf-kpis">
+          <div class="pkpi"><div class="pkpi-n" id="pk-total" style="color:var(--txt)">0</div><div class="pkpi-l">Reportes</div></div>
+          <div class="pkpi"><div class="pkpi-n" id="pk-res"   style="color:#16a34a">0</div><div class="pkpi-l">Resueltas</div></div>
+          <div class="pkpi"><div class="pkpi-n" id="pk-pend"  style="color:#ef4444">0</div><div class="pkpi-l">Pendientes</div></div>
+        </div>
+        <div class="perf-sec">
+          <div class="perf-sec-t">Mis incidencias</div>
+          <div id="mis-inc-list"></div>
+        </div>
+        <button class="logout-btn" onclick="App.logout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+
+  <!-- Bottom nav — FAB floats above via absolute positioning -->
+  <div class="bnav-wrap">
+    <button class="fab-float" onclick="App.openSheet()" aria-label="Reportar nueva incidencia">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <nav class="bnav" aria-label="Navegación principal">
+      <button class="bn-item active" id="bn-mapa"   onclick="App.showView('mapa')"   aria-label="Mapa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        <span>Mapa</span>
+      </button>
+      <button class="bn-item" id="bn-lista"  onclick="App.showView('lista')"  aria-label="Lista">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>Lista</span>
+      </button>
+      <div class="bn-gap"></div>
+      <button class="bn-item" id="bn-stats"  onclick="App.showView('stats')"  aria-label="Estadísticas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Stats</span>
+      </button>
+      <button class="bn-item" id="bn-perfil" onclick="App.showView('perfil')" aria-label="Mi perfil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Perfil</span>
+      </button>
+    </nav>
+  </div>
+
+</div><!-- /s-app -->
+
+<!-- ═══════════ BOTTOM SHEET — nueva incidencia ═══════════ -->
+<div class="sheet-bg" id="sheet-bg" onclick="App.closeSheet()" aria-hidden="true"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="sheet-knob" aria-hidden="true"></div>
+  <div class="sheet-hdr">
+    <div class="sheet-title" id="sheet-title">Nueva incidencia</div>
+    <div class="sheet-sub">Tu reporte pasará por moderación antes de publicarse</div>
+  </div>
+  <div class="sheet-body">
+    <div class="sfield">
+      <label for="f-tipo">Descripción breve *</label>
+      <input type="text" id="f-tipo" placeholder="Ej: Bache en la entrada del colegio"/>
+    </div>
+    <div class="sfield-row">
+      <div class="sfield">
+        <label for="f-cat">Categoría *</label>
+        <select id="f-cat">
+          <option value="">Selecciona…</option>
+          <option value="infraestructura">Infraestructura</option>
+          <option value="luminaria">Luminaria</option>
+          <option value="limpieza">Limpieza</option>
+          <option value="seguridad">Seguridad ciudadana</option>
+          <option value="zonas-verdes">Zonas verdes</option>
+          <option value="ruidos">Ruidos / molestias</option>
+          <option value="otros">Otros</option>
+        </select>
+      </div>
+      <div class="sfield">
+        <label for="f-urg">Urgencia *</label>
+        <select id="f-urg">
+          <option value="">Selecciona…</option>
+          <option value="urgente">🔴 Urgente</option>
+          <option value="alta">🟠 Alta</option>
+          <option value="media">🟡 Media</option>
+          <option value="baja">⚪ Baja</option>
+        </select>
+      </div>
+    </div>
+    <div class="sfield">
+      <label for="f-mun">Municipio *</label>
+      <select id="f-mun">
+        <option value="">Selecciona…</option>
+        <option>Alájar</option>
+        <option>Aljaraque</option>
+        <option>Almonaster la Real</option>
+        <option>Almonte</option>
+        <option>Alosno</option>
+        <option>Aracena</option>
+        <option>Aroche</option>
+        <option>Arroyomolinos de León</option>
+        <option>Ayamonte</option>
+        <option>Beas</option>
+        <option>Berrocal</option>
+        <option>Bollullos Par del Condado</option>
+        <option>Bonares</option>
+        <option>Cabezas Rubias</option>
+        <option>Cala</option>
+        <option>Calañas</option>
+        <option>Campofrío</option>
+        <option>Cañaveral de León</option>
+        <option>Cartaya</option>
+        <option>Castaño del Robledo</option>
+        <option>Chucena</option>
+        <option>Corteconcepción</option>
+        <option>Cortegana</option>
+        <option>Cortelazor</option>
+        <option>Cumbres de Enmedio</option>
+        <option>Cumbres de San Bartolomé</option>
+        <option>Cumbres Mayores</option>
+        <option>El Almendro</option>
+        <option>El Campillo</option>
+        <option>El Cerro de Andévalo</option>
+        <option>El Granado</option>
+        <option>Encinasola</option>
+        <option>Escacena del Campo</option>
+        <option>Fuenteheridos</option>
+        <option>Galaroza</option>
+        <option>Gibraleón</option>
+        <option>Higuera de la Sierra</option>
+        <option>Hinojales</option>
+        <option>Hinojos</option>
+        <option>Huelva</option>
+        <option>Isla Cristina</option>
+        <option>Jabugo</option>
+        <option>La Granada de Río-Tinto</option>
+        <option>La Nava</option>
+        <option>La Palma del Condado</option>
+        <option>La Zarza-Perrunal</option>
+        <option>Lepe</option>
+        <option>Linares de la Sierra</option>
+        <option>Los Marines</option>
+        <option>Lucena del Puerto</option>
+        <option>Manzanilla</option>
+        <option>Minas de Riotinto</option>
+        <option>Moguer</option>
+        <option>Nerva</option>
+        <option>Niebla</option>
+        <option>Palos de la Frontera</option>
+        <option>Paterna del Campo</option>
+        <option>Paymogo</option>
+        <option>Puebla de Guzmán</option>
+        <option>Puerto Moral</option>
+        <option>Punta Umbría</option>
+        <option>Rociana del Condado</option>
+        <option>Rosal de la Frontera</option>
+        <option>San Bartolomé de la Torre</option>
+        <option>San Juan del Puerto</option>
+        <option>San Silvestre de Guzmán</option>
+        <option>Sanlúcar de Guadiana</option>
+        <option>Santa Ana la Real</option>
+        <option>Santa Bárbara de Casa</option>
+        <option>Santa Olalla del Cala</option>
+        <option>Trigueros</option>
+        <option>Valdelarco</option>
+        <option>Valverde del Camino</option>
+        <option>Villablanca</option>
+        <option>Villalba del Alcor</option>
+        <option>Villanueva de las Cruces</option>
+        <option>Villanueva de los Castillejos</option>
+        <option>Villarrasa</option>
+        <option>Zalamea la Real</option>
+        <option>Zufre</option>
+        <option>Otros municipios</option>
+      </select>
+      <div id="f-coords-indicator" class="coords-indicator" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="f-coords-text">Coordenadas: 0, 0</span>
+        <button type="button" onclick="App.clearPendingCoords()">Quitar</button>
+      </div>
+    </div>
+    <div class="sfield">
+      <label for="f-dir">Dirección / zona</label>
+      <input type="text" id="f-dir" placeholder="C/ Colón, 12 — junto al parque…"/>
+    </div>
+    <div class="sfield">
+      <label for="f-desc">Descripción detallada</label>
+      <textarea id="f-desc" placeholder="Explica el problema con el mayor detalle posible…"></textarea>
+    </div>
+    <div class="sfield">
+      <label>Visibilidad</label>
+      <div class="priv-row">
+        <div class="po sel" id="p-pub"  onclick="App.selPriv('pub')"  role="radio" aria-checked="true"  tabindex="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <strong>Pública</strong><small>Tu nombre visible</small>
+        </div>
+        <div class="po" id="p-anon" onclick="App.selPriv('anon')" role="radio" aria-checked="false" tabindex="0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          <strong>Anónima</strong><small>Identidad oculta</small>
+        </div>
+      </div>
+    </div>
+    <button class="btn-send" onclick="App.enviar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Enviar reporte
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="alert" aria-live="assertive">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+  <span>Incidencia enviada correctamente</span>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Firebase SDK Compat -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/map.js"></script>
+<script src="js/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker registered successfully!', reg))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>
